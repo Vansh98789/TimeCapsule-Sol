@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/my_time_capsule.json`.
  */
 export type MyTimeCapsule = {
-  "address": "GFbC5Sq9CHxELxhGciS1EwqCsCvbxavgXYRspnPYvnzf",
+  "address": "54ZFDozFNDgK8xWMaq7jZYRyKvWQmdN64DaLWtDxw3d5",
   "metadata": {
     "name": "myTimeCapsule",
     "version": "0.1.0",

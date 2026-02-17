@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-declare_id!("GFbC5Sq9CHxELxhGciS1EwqCsCvbxavgXYRspnPYvnzf");
+
+declare_id!("54ZFDozFNDgK8xWMaq7jZYRyKvWQmdN64DaLWtDxw3d5");
+
 
 #[program]
 pub mod my_time_capsule {
@@ -137,7 +139,7 @@ pub struct CapsuleState {
 #[derive(Accounts)]
 pub struct InitUser<'info> {
     #[account(
-        init,
+        init_if_needed,
         payer = user,
         space = 8 + 32 + 8,
         seeds = [b"user_state", user.key().as_ref()],
