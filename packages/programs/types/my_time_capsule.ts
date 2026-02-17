@@ -108,6 +108,14 @@ export type MyTimeCapsule = {
         {
           "name": "isPrivate",
           "type": "bool"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
         }
       ]
     },
@@ -351,6 +359,14 @@ export type MyTimeCapsule = {
           {
             "name": "rewardAmount",
             "type": "u64"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
           },
           {
             "name": "isUnlocked",

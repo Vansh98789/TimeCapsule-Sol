@@ -20,6 +20,8 @@ pub mod my_time_capsule {
         reward_amount: u64,
         unlock_time: i64,
         is_private: bool,
+        title:String,
+        description:String,
     ) -> Result<()> {
         require!(reward_amount > 0, ErrorCode::InvalidAmount);
         require!(
@@ -32,6 +34,8 @@ pub mod my_time_capsule {
 
         capsule.creator = ctx.accounts.user.key();
         capsule.unlock_time = unlock_time;
+        capsule.title=title;
+        capsule.description=description;
         capsule.cid = cid;
         capsule.reward_amount = reward_amount;
         capsule.is_unlocked = false;
@@ -122,6 +126,8 @@ pub struct CapsuleState {
     pub unlock_time: i64,
     pub cid: String,
     pub reward_amount: u64,
+    title:String,
+    description:String,
     pub is_unlocked: bool,
     pub is_private: bool,
     pub bump: u8,
@@ -150,7 +156,7 @@ pub struct CreateCapsule<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 8 + 4 + 200 + 8 + 1 + 1 + 1 + 8,
+        space = 8 + 32 + 8 + 4 + 200 + 8 + 1 + 1 + 1 + 8 + 4 + 100 + 4 + 300,
         seeds = [b"capsule", user.key().as_ref(), &user_state.count.to_le_bytes()],
         bump
     )]

@@ -10,7 +10,6 @@ dotenv.config()
 const app = express()
 const upload = multer({ storage: multer.memoryStorage() })
 
-// Fix: explicit CORS options to handle preflight
 app.use(
   cors({
     origin: "http://localhost:5173",

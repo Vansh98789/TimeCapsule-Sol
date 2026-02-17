@@ -102,6 +102,14 @@
         {
           "name": "is_private",
           "type": "bool"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
         }
       ]
     },
@@ -345,6 +353,14 @@
           {
             "name": "reward_amount",
             "type": "u64"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
           },
           {
             "name": "is_unlocked",
