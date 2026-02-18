@@ -1,9 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
-
-declare_id!("54ZFDozFNDgK8xWMaq7jZYRyKvWQmdN64DaLWtDxw3d5");
-
+declare_id!("H5Xk59HCFQahM1cJLE3xAV1gZJ37FDiY3u3TZ2TKnHh9");
 
 #[program]
 pub mod my_time_capsule {
@@ -22,8 +20,8 @@ pub mod my_time_capsule {
         reward_amount: u64,
         unlock_time: i64,
         is_private: bool,
-        title:String,
-        description:String,
+        title: String,
+        description: String,
     ) -> Result<()> {
         require!(reward_amount > 0, ErrorCode::InvalidAmount);
         require!(
@@ -36,8 +34,8 @@ pub mod my_time_capsule {
 
         capsule.creator = ctx.accounts.user.key();
         capsule.unlock_time = unlock_time;
-        capsule.title=title;
-        capsule.description=description;
+        capsule.title = title;
+        capsule.description = description;
         capsule.cid = cid;
         capsule.reward_amount = reward_amount;
         capsule.is_unlocked = false;
@@ -55,11 +53,11 @@ pub mod my_time_capsule {
         system_program::transfer(cpi_ctx, reward_amount)?;
 
         user_state.count += 1;
-
         Ok(())
     }
 
     pub fn unlock_capsule(ctx: Context<UnlockCapsule>) -> Result<()> {
+        // --- all validation while we have the mutable borrow ---
         let capsule = &mut ctx.accounts.capsule;
 
         require!(
@@ -75,43 +73,31 @@ pub mod my_time_capsule {
             );
         }
 
-        // PDA signer seeds
-        let seeds = &[
-            b"capsule",
-            capsule.creator.as_ref(),
-            &capsule.index.to_le_bytes(),
-            &[capsule.bump],
-        ];
-        let signer = &[&seeds[..]];
-
+        // Save reward before releasing the borrow
         let reward = capsule.reward_amount;
 
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: capsule.to_account_info(),
-                to: ctx.accounts.opener.to_account_info(),
-            },
-            signer,
-        );
-
-        system_program::transfer(cpi_ctx, reward)?;
-
+        // Update state while we still hold the mutable borrow
         capsule.reward_amount = 0;
         capsule.is_unlocked = true;
+
+        // Explicitly drop the mutable borrow BEFORE borrowing lamports
+        drop(capsule);
+
+        // Manual lamport transfer — the only valid way to move SOL
+        // out of a PDA that holds data (system_program::transfer would fail)
+        **ctx.accounts.capsule.to_account_info().try_borrow_mut_lamports()? -= reward;
+        **ctx.accounts.opener.to_account_info().try_borrow_mut_lamports()? += reward;
 
         Ok(())
     }
 
     pub fn delete_capsule(ctx: Context<DeleteCapsule>) -> Result<()> {
         let capsule = &ctx.accounts.capsule;
-
         require!(
             capsule.creator == ctx.accounts.user.key(),
             ErrorCode::Unauthorized
         );
         require!(capsule.is_unlocked, ErrorCode::NotUnlocked);
-
         Ok(())
     }
 }
@@ -128,8 +114,8 @@ pub struct CapsuleState {
     pub unlock_time: i64,
     pub cid: String,
     pub reward_amount: u64,
-    title:String,
-    description:String,
+    pub title: String,
+    pub description: String,
     pub is_unlocked: bool,
     pub is_private: bool,
     pub bump: u8,
@@ -146,10 +132,8 @@ pub struct InitUser<'info> {
         bump
     )]
     pub user_state: Account<'info, UserState>,
-
     #[account(mut)]
     pub user: Signer<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
@@ -163,17 +147,14 @@ pub struct CreateCapsule<'info> {
         bump
     )]
     pub capsule: Account<'info, CapsuleState>,
-    
     #[account(
         mut,
         seeds = [b"user_state", user.key().as_ref()],
         bump
     )]
     pub user_state: Account<'info, UserState>,
-
     #[account(mut)]
     pub user: Signer<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
@@ -185,23 +166,20 @@ pub struct UnlockCapsule<'info> {
         bump = capsule.bump
     )]
     pub capsule: Account<'info, CapsuleState>,
-
     #[account(mut)]
     pub opener: Signer<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct DeleteCapsule<'info> {
     #[account(
-    mut,
-    seeds = [b"capsule", capsule.creator.as_ref(), &capsule.index.to_le_bytes()],
-    bump = capsule.bump,
-    close = user
-)]
+        mut,
+        seeds = [b"capsule", capsule.creator.as_ref(), &capsule.index.to_le_bytes()],
+        bump = capsule.bump,
+        close = user
+    )]
     pub capsule: Account<'info, CapsuleState>,
-
     #[account(mut)]
     pub user: Signer<'info>,
 }

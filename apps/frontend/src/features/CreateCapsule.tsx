@@ -4,7 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import idl from "../../../../packages/programs/idl/my_time_capsule.json";
 
-const programId = new PublicKey("54ZFDozFNDgK8xWMaq7jZYRyKvWQmdN64DaLWtDxw3d5");
+const programId = new PublicKey("H5Xk59HCFQahM1cJLE3xAV1gZJ37FDiY3u3TZ2TKnHh9");
 const network = "https://api.devnet.solana.com";
 
 interface UserStateAccount {
