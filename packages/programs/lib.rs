@@ -73,18 +73,11 @@ pub mod my_time_capsule {
             );
         }
 
-        // Save reward before releasing the borrow
         let reward = capsule.reward_amount;
 
-        // Update state while we still hold the mutable borrow
         capsule.reward_amount = 0;
         capsule.is_unlocked = true;
-
-        // Explicitly drop the mutable borrow BEFORE borrowing lamports
         drop(capsule);
-
-        // Manual lamport transfer — the only valid way to move SOL
-        // out of a PDA that holds data (system_program::transfer would fail)
         **ctx.accounts.capsule.to_account_info().try_borrow_mut_lamports()? -= reward;
         **ctx.accounts.opener.to_account_info().try_borrow_mut_lamports()? += reward;
 
