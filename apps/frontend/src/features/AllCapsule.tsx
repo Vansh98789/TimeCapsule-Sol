@@ -9,7 +9,6 @@ const programId = new PublicKey("H5Xk59HCFQahM1cJLE3xAV1gZJ37FDiY3u3TZ2TKnHh9");
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 const CAPSULE_SEED = Buffer.from("capsule");
 
-// Derive capsule PDA from creator pubkey + index (u64 as little-endian 8 bytes)
 function deriveCapsulePDA(creator: PublicKey, index: string): PublicKey {
   const indexBuf = Buffer.alloc(8);
   indexBuf.writeBigUInt64LE(BigInt(index));
@@ -56,14 +55,16 @@ export default function AllCapsule() {
         .map((acc) => {
           try {
             const decoded = decodeCapsuleState(acc.account.data);
-            // Store the on-chain pubkey alongside decoded data so we can use it for unlock
             return { ...decoded, pubkey: acc.pubkey.toBase58() };
           } catch (e) {
             console.warn("Failed to decode account:", e);
             return null;
           }
         })
-        .filter((c): c is NonNullable<typeof c> => c !== null);
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        // Only show public capsules on this page
+        // Private capsules are managed on the "My Capsules" page
+        .filter((c) => !c.is_private);
 
       setCapsules(decodedCapsules);
     } catch (err: any) {
@@ -87,7 +88,6 @@ export default function AllCapsule() {
       return;
     }
 
-    // Check unlock time — program will also check this, but give early feedback
     const now = Math.floor(Date.now() / 1000);
     if (now < cap.unlock_time) {
       const unlockDate = new Date(cap.unlock_time * 1000).toLocaleString();
@@ -106,7 +106,6 @@ export default function AllCapsule() {
       const provider = getProvider();
       const program = new anchor.Program(idl as anchor.Idl, provider);
 
-      // Derive the capsule PDA from creator + index (matches on-chain seeds)
       const creatorPubkey = new PublicKey(cap.creator);
       const capsulePDA = deriveCapsulePDA(creatorPubkey, cap.index);
 
@@ -120,13 +119,9 @@ export default function AllCapsule() {
         .rpc();
 
       setTxSuccess(`Capsule unlocked! Tx: ${tx}`);
-
-      // Refresh capsule list to reflect new is_unlocked state
       await fetchAllAccounts();
     } catch (err: any) {
       console.error("Unlock error:", err);
-
-      // Parse Anchor error codes into friendly messages
       if (err.error?.errorCode?.code === "AlreadyUnlocked") {
         setTxError("This capsule has already been unlocked.");
       } else if (err.error?.errorCode?.code === "NotUnlocked") {
@@ -153,22 +148,21 @@ export default function AllCapsule() {
       {!connected && (
         <p style={{ color: "orange" }}>⚠️ Connect your wallet to unlock capsules.</p>
       )}
-
       {txSuccess && (
         <p style={{ color: "green", wordBreak: "break-all" }}>✅ {txSuccess}</p>
       )}
       {txError && (
         <p style={{ color: "red" }}>❌ {txError}</p>
       )}
-
       {loading && <p>Loading capsules...</p>}
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {!loading && !error && capsules.length === 0 && <p>No capsules found.</p>}
+      {!loading && !error && capsules.length === 0 && <p>No public capsules found.</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {capsules.map((cap, idx) => {
           const unlockable = canUnlock(cap);
           const isUnlocking = unlockingIdx === idx;
+          const isOwner = publicKey?.toBase58() === cap.creator;
 
           return (
             <div
@@ -177,30 +171,37 @@ export default function AllCapsule() {
                 padding: "15px",
                 border: "1px solid #ccc",
                 borderRadius: "8px",
-                backgroundColor: cap.is_unlocked
-                  ? "#e0ffe0"
-                  : cap.is_private
-                  ? "#f9f9f9"
-                  : "#fff8e1",
+                backgroundColor: cap.is_unlocked ? "#e0ffe0" : "#fff8e1",
               }}
             >
               <h2 style={{ marginTop: 0 }}>
                 {cap.title || "Untitled"}{" "}
-                {cap.is_unlocked && <span style={{ color: "green" }}>🔓 Unlocked</span>}
-                {!cap.is_unlocked && <span style={{ color: "gray" }}>🔒 Locked</span>}
+                {cap.is_unlocked
+                  ? <span style={{ color: "green" }}>🔓 Unlocked</span>
+                  : <span style={{ color: "gray" }}>🔒 Locked</span>
+                }
+                {isOwner && (
+                  <span style={{ fontSize: "12px", color: "#888", marginLeft: "8px" }}>
+                    (Your Capsule)
+                  </span>
+                )}
               </h2>
 
               <p><strong>Description:</strong> {cap.description}</p>
               <p><strong>Creator:</strong> <code>{cap.creator}</code></p>
-              <p><strong>CID:</strong> {cap.cid}</p>
               <p><strong>Reward Amount:</strong> {cap.reward_amount} lamports</p>
               <p>
                 <strong>Unlock Time:</strong>{" "}
                 {new Date(cap.unlock_time * 1000).toLocaleString()}
               </p>
-              <p><strong>Private:</strong> {cap.is_private ? "Yes" : "No"}</p>
-              <p><strong>Bump:</strong> {cap.bump}</p>
               <p><strong>Index:</strong> {cap.index}</p>
+
+              {/* CID only revealed after unlock */}
+              {cap.is_unlocked && (
+                <p style={{ backgroundColor: "#d4edda", padding: "8px", borderRadius: "4px" }}>
+                  <strong>CID:</strong> {cap.cid}
+                </p>
+              )}
 
               <button
                 onClick={() => handleCapsuleUnlock(cap, idx)}
@@ -210,10 +211,9 @@ export default function AllCapsule() {
                   padding: "10px 20px",
                   borderRadius: "6px",
                   border: "none",
-                  cursor:
-                    !connected || cap.is_unlocked || isUnlocking
-                      ? "not-allowed"
-                      : "pointer",
+                  cursor: !connected || cap.is_unlocked || isUnlocking
+                    ? "not-allowed"
+                    : "pointer",
                   backgroundColor: cap.is_unlocked
                     ? "#aaa"
                     : unlockable
@@ -244,4 +244,4 @@ export default function AllCapsule() {
       </div>
     </div>
   );
-}   
+}
