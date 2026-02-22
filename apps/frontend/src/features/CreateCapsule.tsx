@@ -55,7 +55,7 @@ export default function CreateCapsule() {
       formData.append("file", file);
       formData.append("title", title);
       formData.append("description", description);
-      const res = await fetch("http://localhost:4000/upload", { method: "POST", body: formData });
+      const res = await fetch("https://time-capsule-sol-frontend-s8by.vercel.app/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Upload failed");
