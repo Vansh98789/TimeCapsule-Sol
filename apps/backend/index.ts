@@ -12,14 +12,17 @@ const upload = multer({ storage: multer.memoryStorage() })
 
 app.use(
   cors({
-    origin: ['https://time-capsule-sol-frontend.vercel.app/','*'],
+    origin: [
+      "https://time-capsule-sol-frontend.vercel.app",
+      "http://localhost:3000",
+    ],
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 )
 
-
+app.options("*", cors())
 
 const FILEBASE_KEY = process.env.FILEBASE_KEY as string
 const FILEBASE_SECRET = process.env.FILEBASE_SECRET as string
