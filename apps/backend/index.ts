@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage() })
 
 app.use(
   cors({
-    origin: "https://time-capsule-sol-frontend.vercel.app/",
+    origin: ['https://time-capsule-sol-frontend.vercel.app/','*'],
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
