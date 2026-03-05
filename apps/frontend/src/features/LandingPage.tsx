@@ -21,7 +21,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed">
-          Store your memories, thoughts, and legacy across the fabric of time —
+          Store your memories, thoughts, and legacy across the fabric of time -
           so that future generations may know who you truly were.
         </p>
 
